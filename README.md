@@ -31,8 +31,14 @@ The Redirect plugin states the following for its macro queuing functionality:
 > If you use a macro that has multiple actions that can succeed while you are not casting, it will use the first one immediately and queue the second one. This is the intended behavior.
 
 Does that mean with this plugin you can play the game with one button? Probably not but maybe. My intent with this is to make a mod that is useful
-for a very specific class of macros. For example. Consider the following usecase. 1: A GCD macro, that attempts multiple mutually exclusive GCD actions.
-2: A "use any mitigation" macro, that uses ONE of your oGCD mitigations picked from a list. With the redirect plugin, the first of these macros works fine.
+for a very specific class of macros.
+
+For example. Consider the following usecase.
+
+1. A GCD macro, that attempts multiple mutually exclusive GCD actions.
+2. A "use any mitigation" macro, that uses ONE of your oGCD mitigations picked from a list.
+
+With the redirect plugin, the first of these macros works fine.
 But the second one breaks "by design". With the base game, the second macro works fine but the first breaks.
 
 By selectively turning on and off queueing, both of these macros can be made to work.
