@@ -4,7 +4,7 @@ using Dalamud.Interface.Internal;
 using Dalamud.Interface.Windowing;
 using ImGuiNET;
 
-namespace SamplePlugin.Windows;
+namespace MacroQueue.Windows;
 
 public class MainWindow : Window, IDisposable
 {
@@ -31,7 +31,7 @@ public class MainWindow : Window, IDisposable
 
     public override void Draw()
     {
-        ImGui.Text($"The random config bool is {this.Plugin.Configuration.SomePropertyToBeSavedAndWithADefault}");
+        ImGui.Text($"The random config bool is {this.Plugin.Configuration.QueueingEnabled}");
 
         if (ImGui.Button("Show Settings"))
         {

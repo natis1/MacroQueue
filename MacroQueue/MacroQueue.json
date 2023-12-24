@@ -1,0 +1,13 @@
+{
+  "Author": "Pine",
+  "Name": "Macro Queue",
+  "Punchline": "Tell macros to add actions to the queue at will.",
+  "Description": "Within a Macro, simply write /mqon to turn on macro queueing for all subsequent actions.\n/mqoff to turn it off. It should be turned off at the end of the macro.\nNote that actions being added to the queue means they will fire if cast within about a half second window before the gcd is off cooldown.\nFurthermore, only one action can be queued at a time. This means you cannot use this to automate fights for you.",
+  "InternalName": "macroQueue",
+  "ApplicableVersion": "any",
+  "Tags": [
+    "macro",
+    "plugin",
+    "queueing"
+  ]
+}

@@ -3,18 +3,18 @@ using System.Numerics;
 using Dalamud.Interface.Windowing;
 using ImGuiNET;
 
-namespace SamplePlugin.Windows;
+namespace MacroQueue.Windows;
 
 public class ConfigWindow : Window, IDisposable
 {
     private Configuration Configuration;
 
     public ConfigWindow(Plugin plugin) : base(
-        "A Wonderful Configuration Window",
+        "MQ configuration",
         ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoScrollbar |
         ImGuiWindowFlags.NoScrollWithMouse)
     {
-        this.Size = new Vector2(232, 75);
+        this.Size = new Vector2(232, 100);
         this.SizeCondition = ImGuiCond.Always;
 
         this.Configuration = plugin.Configuration;
@@ -25,11 +25,18 @@ public class ConfigWindow : Window, IDisposable
     public override void Draw()
     {
         // can't ref a property, so use a local copy
-        var configValue = this.Configuration.SomePropertyToBeSavedAndWithADefault;
-        if (ImGui.Checkbox("Random Config Bool", ref configValue))
+        var configValue = this.Configuration.QueueingEnabled;
+        var debugQueue = this.Configuration.EchoQueueingStatus;
+        if (ImGui.Checkbox("Default queueing state", ref configValue))
         {
-            this.Configuration.SomePropertyToBeSavedAndWithADefault = configValue;
-            // can save immediately on change, if you don't want to provide a "Save and Close" button
+            this.Configuration.QueueingEnabled = configValue;
+            this.Configuration.Save();
+            // Update mqueue status
+            Plugin.MqStatus = configValue;
+        }
+        if (ImGui.Checkbox("Echo queueing status", ref debugQueue))
+        {
+            this.Configuration.EchoQueueingStatus = debugQueue;
             this.Configuration.Save();
         }
     }
