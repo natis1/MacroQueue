@@ -29,10 +29,13 @@ public class ConfigWindow : Window, IDisposable
         var debugQueue = this.Configuration.EchoQueueingStatus;
         if (ImGui.Checkbox("Default queueing state", ref configValue))
         {
+            if (configValue) {
+                Plugin.MqStatus = 1073741824;
+            } else {
+                Plugin.MqStatus = 0;
+            }
             this.Configuration.QueueingEnabled = configValue;
             this.Configuration.Save();
-            // Update mqueue status
-            Plugin.MqStatus = configValue;
         }
         if (ImGui.Checkbox("Echo queueing status", ref debugQueue))
         {

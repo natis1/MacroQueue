@@ -17,7 +17,8 @@ namespace MacroQueue
         public string Name => "Sample Plugin";
         private const string MQON = "/mqon";
         private const string MQOFF = "/mqoff";
-        public static bool MqStatus = false;
+        private const string MQRESET = "/mqr"; // Only allow macro queueing on the next action
+        public static int MqStatus = 0;
         
         
 
@@ -49,6 +50,9 @@ namespace MacroQueue
 
             this.Configuration = this.PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
             this.Configuration.Initialize(this.PluginInterface);
+            if (this.Configuration.QueueingEnabled) {
+                MqOn("", "");
+            }
 
             // you might normally want to embed resources and load them from the manifest stream
             var imagePath = Path.Combine(PluginInterface.AssemblyLocation.Directory?.FullName!, "goat.png");
@@ -64,6 +68,11 @@ namespace MacroQueue
             this.CommandManager.AddHandler(MQOFF, new CommandInfo(MqOff)
             {
                 HelpMessage = "Turn off macro queuing. Macros should include both commands in them."
+            });
+
+            this.CommandManager.AddHandler(MQRESET, new CommandInfo(MqReset)
+            {
+                HelpMessage = "Turn on macro queueing, but only for the next successfully queueable action. Afterwards, turn it off until reset again, or turned on."
             });
 
             this.PluginInterface.UiBuilder.Draw += DrawUI;
@@ -84,6 +93,7 @@ namespace MacroQueue
             
             this.CommandManager.RemoveHandler(MQON);
             this.CommandManager.RemoveHandler(MQOFF);
+            this.CommandManager.RemoveHandler(MQRESET);
             tryActionHook?.Dispose();
         }
 
@@ -108,14 +118,29 @@ namespace MacroQueue
             
             // Macro queueing with instant exit if it cannot be cast
             // Known origins : 0 - bar, 1 - queue, 2 - macro
-            if (origin == 2 && MqStatus) {
+            if (origin == 2 && MqStatus > 0) {
                 // Actions placed on bars try to use their base action, so we need to get the upgraded version
                 var adjustedId = ActionManager.MemberFunctionPointers.GetAdjustedActionId((ActionManager*)actionManager, id);
-                // Check status, ignoring all cooldowns, just checking if it's available or not.
+                // Check status, ignoring the GCD and just checking if the action is available or not.
                 var status = ActionManager.MemberFunctionPointers.GetActionStatus((ActionManager*)actionManager, type, adjustedId, (uint)target, false, false, null);
+                var status2 = ActionManager.MemberFunctionPointers.GetActionStatus((ActionManager*)actionManager, type, adjustedId, (uint)target, true, true, null);
+
+                if (Configuration.EchoQueueingStatus) {
+
+                    ChatGui.Print(new XivChatEntry
+                    {
+                        Message = "Macro attempting execute queued action with status: " + status + " and status2: " + status2,
+                        Type = XivChatType.Echo
+                    });
+                }
                 // Do NOT queue if it's unavailable.
                 if (status == 572) {
                     return false;
+                }
+                // Subtract 1 from mqstatus, so that if it's set to 1, it will turn off macro queueing for future actions.
+                // but only if the ability is NOT on cooldown.
+                if (status2 != 582) {
+                    MqStatus--;
                 }
                 origin = 0;
             }
@@ -124,7 +149,7 @@ namespace MacroQueue
 
         private void MqOn(string command, string args)
         {
-            MqStatus = true;
+            MqStatus = 1073741824;
             if (Configuration.EchoQueueingStatus)
             {
                 
@@ -138,12 +163,25 @@ namespace MacroQueue
         
         private void MqOff(string command, string args)
         {
-            MqStatus = false;
+            MqStatus = 0;
             if (Configuration.EchoQueueingStatus)
             {
                 ChatGui.Print(new XivChatEntry
                 {
                     Message = "Macro Queueing Disabled.",
+                    Type = XivChatType.Echo
+                });
+            }
+        }
+
+        private void MqReset(string command, string args)
+        {
+            MqStatus = 1;
+            if (Configuration.EchoQueueingStatus)
+            {
+                ChatGui.Print(new XivChatEntry
+                {
+                    Message = "Macro Queueing reset to 1.",
                     Type = XivChatType.Echo
                 });
             }
