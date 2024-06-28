@@ -19,13 +19,13 @@ namespace MacroQueue
         private const string MQOFF = "/mqoff";
         private const string MQRESET = "/mqr"; // Only allow macro queueing on the next action
         public static int MqStatus = 0;
+        [PluginService] internal static DalamudPluginInterface PluginInterface { get; private set; } = null!;
+        [PluginService] internal static ICommandManager CommandManager { get; private set; } = null!;
+        [PluginService] internal static IGameInteropProvider InteropProvider { get; private set; } = null!;
+        [PluginService] internal static IDataManager DataManager { get; private set; } = null!;
+        [PluginService] internal static IChatGui ChatGui { get; private set; } = null!;
+        [PluginService] internal static IClientState ClientState { get; private set; } = null!;
         
-        
-
-        private DalamudPluginInterface PluginInterface { get; init; }
-        private IGameInteropProvider InteropProvider { get; init; }
-        private ICommandManager CommandManager { get; init; }
-        private IChatGui ChatGui { get; init; }
 
         public Configuration Configuration { get; init; }
         
@@ -36,20 +36,11 @@ namespace MacroQueue
 
         private ConfigWindow ConfigWindow { get; init; }
 
-        public Plugin(
-            [RequiredVersion("1.0")] DalamudPluginInterface pluginInterface,
-            [RequiredVersion("1.0")] ICommandManager commandManager,
-            [RequiredVersion("1.0")] IGameInteropProvider interopProvider,
-            [RequiredVersion("1.0")] IDataManager dataManager, [RequiredVersion("1.0")] IChatGui chatGui)
+        public Plugin()
         {
-            this.PluginInterface = pluginInterface;
-            this.CommandManager = commandManager;
-            this.InteropProvider = interopProvider;
-            this.Actions = new Actions(dataManager);
-            this.ChatGui = chatGui;
+            this.Actions = new Actions(DataManager);
 
-            this.Configuration = this.PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
-            this.Configuration.Initialize(this.PluginInterface);
+            this.Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
             if (this.Configuration.QueueingEnabled) {
                 MqOn("", "");
             }
@@ -60,23 +51,23 @@ namespace MacroQueue
             ConfigWindow = new ConfigWindow(this);
             WindowSystem.AddWindow(ConfigWindow);
 
-            this.CommandManager.AddHandler(MQON, new CommandInfo(MqOn)
+            CommandManager.AddHandler(MQON, new CommandInfo(MqOn)
             {
                 HelpMessage = "Turn on macro queuing. Macros should include both commands in them."
             });
             
-            this.CommandManager.AddHandler(MQOFF, new CommandInfo(MqOff)
+            CommandManager.AddHandler(MQOFF, new CommandInfo(MqOff)
             {
                 HelpMessage = "Turn off macro queuing. Macros should include both commands in them."
             });
 
-            this.CommandManager.AddHandler(MQRESET, new CommandInfo(MqReset)
+            CommandManager.AddHandler(MQRESET, new CommandInfo(MqReset)
             {
                 HelpMessage = "Turn on macro queueing, but only for the next successfully queueable action. Afterwards, turn it off until reset again, or turned on."
             });
 
-            this.PluginInterface.UiBuilder.Draw += DrawUI;
-            this.PluginInterface.UiBuilder.OpenConfigUi += DrawConfigUI;
+            PluginInterface.UiBuilder.Draw += DrawUI;
+            PluginInterface.UiBuilder.OpenConfigUi += DrawConfigUI;
             
             unsafe {
                 tryActionHook = InteropProvider.HookFromAddress<TryActionDelegate>((IntPtr)ActionManager.MemberFunctionPointers.UseAction, TryActionCallback);
@@ -91,9 +82,9 @@ namespace MacroQueue
             
             ConfigWindow.Dispose();
             
-            this.CommandManager.RemoveHandler(MQON);
-            this.CommandManager.RemoveHandler(MQOFF);
-            this.CommandManager.RemoveHandler(MQRESET);
+            CommandManager.RemoveHandler(MQON);
+            CommandManager.RemoveHandler(MQOFF);
+            CommandManager.RemoveHandler(MQRESET);
             tryActionHook?.Dispose();
         }
 
@@ -126,10 +117,11 @@ namespace MacroQueue
                 var status2 = ActionManager.MemberFunctionPointers.GetActionStatus((ActionManager*)actionManager, type, adjustedId, (uint)target, true, true, null);
 
                 if (Configuration.EchoQueueingStatus) {
+                    PrintBuffArray();
 
                     ChatGui.Print(new XivChatEntry
                     {
-                        Message = "Macro attempting execute queued action with status: " + status + " and status2: " + status2,
+                        Message = "Macro attempting execute action ID: " + adjustedId +" with status: " + status + " and status2: " + status2,
                         Type = XivChatType.Echo
                     });
                 }
@@ -182,6 +174,21 @@ namespace MacroQueue
                 ChatGui.Print(new XivChatEntry
                 {
                     Message = "Macro Queueing reset to 1.",
+                    Type = XivChatType.Echo
+                });
+            }
+        }
+
+        private void PrintBuffArray()
+        {
+            var buffs = ClientState.LocalPlayer.StatusList;
+            for (var i = 0; i < buffs.Length; i++) {
+                if (buffs[i].StatusId == 0) {
+                    continue;
+                }
+                ChatGui.Print(new XivChatEntry
+                {
+                    Message = "Player has buff with ID: " + buffs[i].StatusId,
                     Type = XivChatType.Echo
                 });
             }

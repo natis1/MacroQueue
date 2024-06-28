@@ -5,7 +5,8 @@
   <PropertyGroup>
     <Authors>Pine</Authors>
     <Company>Synthagen</Company>
-    <Version>1</Version>
+    <Version>1.1</Version>
+    <RequiredVersion>1</RequiredVersion>
     <Description>Queue Macros with Ease</Description>
     <Copyright>2023</Copyright>
     <PackageProjectUrl>https://github.com/natis1/MacroQueue</PackageProjectUrl>
